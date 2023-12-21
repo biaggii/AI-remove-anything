@@ -44,7 +44,7 @@ sam_checkpoint_url_dict = {
     'vit_h': "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth",
     'vit_l': "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_l_0b3195.pth",
     'vit_b': "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
-}
+    }
 ckpt_folder = checkpoint_folder
 
 sam_checkpoint = load_file_from_url(sam_checkpoint_url_dict[args.sam_model_type], ckpt_folder)
@@ -154,8 +154,30 @@ def vos_tracking_video(video_state, interactive_state, mask_dropdown):
             )  # import video_input to name the output video
     interactive_state["inference_times"] += 1
 
+    print(
+            "For generating this tracking result, inference times: {}, click times: {}, positive: {}, negative: {}".format(
+                    interactive_state["inference_times"],
+                    interactive_state["positive_click_times"] + interactive_state["negative_click_times"],
+                    interactive_state["positive_click_times"],
+                    interactive_state["negative_click_times"]
+                    )
+            )
 
-    # convert points input to prompt state
+    # Mask save
+    if interactive_state["mask_save"]:
+        if not os.path.exists('./result/mask/{}'.format(video_state["video_name"].split('.')[0])):
+            os.makedirs('./result/mask/{}'.format(video_state["video_name"].split('.')[0]))
+        i = 0
+        print("save mask")
+        for mask in video_state["masks"]:
+            np.save(os.path.join('./result/mask/{}'.format(video_state["video_name"].split('.')[0]), '{:05d}.npy'.format(i)), mask)
+            i += 1
+        # save_mask(video_state["masks"], video_state["video_name"])
+
+    return video_output, video_state, interactive_state, operation_log, operation_log
+
+
+# convert points input to prompt state
 def get_prompt(c_state, click_input):
     inputs = json.loads(click_input)
     points = c_state[0]
@@ -201,6 +223,7 @@ def sam_refine(video_states, point_prompt, click_state, interactive_state, evt: 
                      ("[Optional]", "Remove mask"), (": remove all added masks.\n", None),
                      ("[Optional]", "Clear clicks"), (": clear current displayed mask.\n", None),
                      ("[Optional]", "Click image"), (": Try to click the image shown in step2 if you want to generate more masks.\n", None)]
+
     return painted_image, video_states, interactive_state, operation_log, operation_log
 
 
