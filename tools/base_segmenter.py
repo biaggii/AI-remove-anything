@@ -1,12 +1,7 @@
-import time
 import torch
 import cv2
-from PIL import Image, ImageDraw, ImageOps
 import numpy as np
-from typing import Union
-from segment_anything import sam_model_registry, SamPredictor, SamAutomaticMaskGenerator
-import matplotlib.pyplot as plt
-import PIL
+from segment_anything import sam_model_registry, SamPredictor
 from .mask_painter import mask_painter
 
 
@@ -17,6 +12,7 @@ class SamSegment:
         SAM_checkpoint: path of SAM checkpoint
         model_type: vit_b, vit_l, vit_h
         """
+        self.original_image = None
         print(f"Init to {device}")
         assert model_type in ['vit_b', 'vit_l', 'vit_h'], 'model_type must be vit_b, vit_l, or vit_h'
 
@@ -31,7 +27,7 @@ class SamSegment:
     def set_image(self, img: np.ndarray):
         # PIL.open(image_path) 3channel: RGB
         # image embedding: avoid encode the same image multiple times
-        self.orignal_image = img
+        self.original_image = img
         if self.embedded:
             print('repeat embedding, please reset_image.')
             return
@@ -41,7 +37,7 @@ class SamSegment:
     
     @torch.no_grad()
     def reset_image(self):
-        # reset image embeding
+        # reset image embedding
         self.predictor.reset_image()
         self.embedded = False
 
